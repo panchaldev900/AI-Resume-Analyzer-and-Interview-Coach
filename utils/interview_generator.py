@@ -69,3 +69,42 @@ def simulate_interview_questions(skills, category):
     return {
         "questions": questions
     }
+
+def evaluate_interview_answer(question, user_answer):
+    """
+    Evaluates a user's answer to an interview question using Gemini.
+    """
+    if client:
+        try:
+            prompt = f"""
+            You are an expert technical interviewer and HR coach.
+            The user was asked this interview question:
+            "{question}"
+
+            The user provided this answer:
+            "{user_answer}"
+
+            Evaluate their answer strictly as a JSON object with this exact structure:
+            {{
+                "score": <integer out of 10 based on how good the answer is>,
+                "feedback": "Constructive feedback on what they did well and what was missing. Be specific and helpful.",
+                "improved_answer": "Rewrite their answer into a polished, professional version using the STAR method if applicable."
+            }}
+            Return ONLY the JSON. Do not include markdown code blocks.
+            """
+            response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt,
+            )
+            # Clean up response
+            response_text = response.text.replace("```json", "").replace("```", "").strip()
+            return json.loads(response_text)
+        except Exception as e:
+            print(f"Error calling Gemini API for evaluation: {e}")
+            
+    # Fallback if no API or error
+    return {
+        "score": 5,
+        "feedback": "Your answer is recorded. For a higher score, ensure you use the STAR method (Situation, Task, Action, Result) and provide specific details.",
+        "improved_answer": "As an example, I led a cross-functional team to deliver the project on time by prioritizing tasks, resulting in a 20% efficiency increase."
+    }

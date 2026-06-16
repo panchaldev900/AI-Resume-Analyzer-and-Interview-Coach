@@ -3,13 +3,13 @@
 {% block title %}AI Interview Coach | AI Resume Analyzer{% endblock %}
 
 {% block content %}
-<div class="dashboard-layout bg-black bg-opacity-25" style="height: calc(100vh - 80px); overflow: hidden;">
+<div class="dashboard-layout interview-layout bg-black bg-opacity-25">
     
     <!-- Left Sidebar: Categories -->
-    <aside class="dashboard-sidebar" style="min-width: 260px; max-width: 260px; background: rgba(15, 23, 42, 0.95);">
+    <aside class="dashboard-sidebar interview-sidebar" style="background: rgba(15, 23, 42, 0.95);">
         <div class="mb-4">
             <h5 class="fw-bold text-white mb-1"><i class="fa-solid fa-robot text-gradient me-2"></i> Interview Coach</h5>
-            <p class="text-secondary small mb-0">Personalized AI Mock Interview</p>
+            <p class="text-secondary small mb-0 d-none d-lg-block">Personalized AI Mock Interview</p>
         </div>
         
         <h6 class="text-uppercase text-secondary fw-bold letter-spacing-1 mb-3 mt-2" style="font-size: 11px;">Question Categories</h6>
@@ -75,15 +75,18 @@
             
         </div>
 
-        <!-- Sticky Bottom Controls (Fake Chat Input area) -->
+        <!-- Sticky Bottom Controls (Interactive Chat Input area) -->
         <div class="p-4" style="background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-color); backdrop-filter: var(--glass-blur);">
-            <div class="d-flex gap-3 justify-content-center align-items-center max-w-800 mx-auto">
-                <button class="btn btn-outline-secondary rounded-pill px-4" id="showAnswerBtn" disabled>
-                    <i class="fa-solid fa-eye me-2"></i> Show AI Answer
-                </button>
-                <button class="btn btn-primary rounded-pill px-5 shadow-lg" id="nextBtn" disabled>
-                    Next Question <i class="fa-solid fa-arrow-right ms-2"></i>
-                </button>
+            <div class="max-w-800 mx-auto d-flex flex-column gap-3">
+                <textarea class="form-control border-secondary text-white" id="userAnswerInput" rows="3" placeholder="Type your answer here to get AI feedback..." style="background: rgba(255,255,255,0.05); resize: none;" disabled></textarea>
+                <div class="d-flex gap-3 justify-content-end align-items-center">
+                    <button class="btn btn-success rounded-pill px-4 shadow-lg" id="submitAnswerBtn" disabled>
+                        <i class="fa-solid fa-paper-plane me-2"></i> Submit Answer
+                    </button>
+                    <button class="btn btn-primary rounded-pill px-5 shadow-lg d-none" id="nextBtn">
+                        Next Question <i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -147,14 +150,17 @@ body { overflow: hidden; }
             });
         });
 
+        const userAnswerInput = document.getElementById('userAnswerInput');
+        const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+
         // Generate Questions
         generateBtn.addEventListener('click', async () => {
             generateBtn.disabled = true;
-            nextBtn.disabled = true;
-            showAnswerBtn.disabled = true;
+            nextBtn.classList.add('d-none');
+            userAnswerInput.disabled = true;
+            submitAnswerBtn.disabled = true;
             loadingIndicator.classList.remove('d-none');
             
-            // Auto scroll to bottom
             setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
 
             try {
@@ -172,6 +178,7 @@ body { overflow: hidden; }
                 if (response.ok) {
                     currentQuestions = result.questions;
                     currentQuestionIndex = 0;
+                    questionsContainer.innerHTML = '';
                     displayCurrentQuestion();
                 } else {
                     throw new Error(result.error || 'Failed to generate questions');
@@ -190,7 +197,7 @@ body { overflow: hidden; }
             const q = currentQuestions[currentQuestionIndex];
             
             const questionHtml = `
-                <div class="chat-container animate-fade-up">
+                <div class="chat-container animate-fade-up mb-4" id="q-container-${currentQuestionIndex}">
                     <!-- AI Question -->
                     <div class="chat-message chat-ai">
                         <div class="avatar avatar-ai shadow-sm"><i class="fa-solid fa-robot"></i></div>
@@ -202,43 +209,95 @@ body { overflow: hidden; }
                             <h5 class="fw-bold text-white lh-base">${q.question}</h5>
                         </div>
                     </div>
-                    
-                    <!-- AI Answer (Hidden by default) -->
-                    <div class="chat-message chat-ai d-none" id="answer-${currentQuestionIndex}">
-                        <div class="avatar bg-success text-white shadow-sm"><i class="fa-solid fa-lightbulb"></i></div>
-                        <div class="chat-bubble" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
-                            <h6 class="text-success fw-bold mb-2">Suggested Answer Guide</h6>
-                            <p class="text-secondary mb-0" style="white-space: pre-line;">${q.suggested_answer}</p>
-                            
-                            <div class="mt-3 pt-3 border-top" style="border-color: rgba(16, 185, 129, 0.1) !important;">
-                                <h6 class="text-white small fw-bold mb-2">Key points to hit:</h6>
-                                <ul class="text-secondary small mb-0 ps-3">
-                                    <li>Focus on the STAR method (Situation, Task, Action, Result)</li>
-                                    <li>Highlight specific technologies from your resume</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             `;
 
             questionsContainer.innerHTML += questionHtml;
             
             // Enable controls
-            showAnswerBtn.disabled = false;
-            nextBtn.disabled = currentQuestionIndex >= currentQuestions.length - 1;
+            userAnswerInput.disabled = false;
+            userAnswerInput.value = '';
+            submitAnswerBtn.disabled = false;
+            nextBtn.classList.add('d-none');
             
             // Auto scroll
             setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+            userAnswerInput.focus();
         }
 
-        // Show Answer logic
-        showAnswerBtn.addEventListener('click', () => {
-            const answerDiv = document.getElementById(`answer-${currentQuestionIndex}`);
-            if (answerDiv) {
-                answerDiv.classList.remove('d-none');
-                answerDiv.classList.add('animate-fade-up');
-                showAnswerBtn.disabled = true;
+        // Submit Answer logic
+        submitAnswerBtn.addEventListener('click', async () => {
+            const answer = userAnswerInput.value.trim();
+            if (!answer) return;
+
+            const q = currentQuestions[currentQuestionIndex];
+
+            // Disable inputs
+            userAnswerInput.disabled = true;
+            submitAnswerBtn.disabled = true;
+            loadingIndicator.classList.remove('d-none');
+            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+
+            // Display User Answer immediately
+            const userAnswerHtml = `
+                <div class="chat-message chat-user d-flex justify-content-end mb-4 animate-fade-up">
+                    <div class="chat-bubble bg-primary text-white" style="border-radius: 16px 16px 0 16px; max-width: 80%;">
+                        <p class="mb-0" style="white-space: pre-line;">${answer}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById(`q-container-${currentQuestionIndex}`).innerHTML += userAnswerHtml;
+
+            try {
+                const response = await fetch('/api/evaluate_answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: q.question,
+                        user_answer: answer
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Display AI Feedback
+                    let scoreBadge = 'bg-danger text-danger';
+                    if (result.score >= 8) scoreBadge = 'bg-success text-success';
+                    else if (result.score >= 5) scoreBadge = 'bg-warning text-warning';
+
+                    const feedbackHtml = `
+                        <!-- AI Feedback -->
+                        <div class="chat-message chat-ai mb-4 animate-fade-up">
+                            <div class="avatar bg-success text-white shadow-sm"><i class="fa-solid fa-graduation-cap"></i></div>
+                            <div class="chat-bubble flex-grow-1" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: rgba(16, 185, 129, 0.1) !important;">
+                                    <h6 class="text-success fw-bold mb-0">AI Feedback</h6>
+                                    <span class="badge ${scoreBadge} bg-opacity-10 px-3 py-2 rounded-pill fs-6">${result.score} / 10</span>
+                                </div>
+                                <p class="text-white mb-3" style="white-space: pre-line;">${result.feedback}</p>
+                                
+                                <div class="mt-3 pt-3 border-top" style="border-color: rgba(16, 185, 129, 0.1) !important;">
+                                    <h6 class="text-white small fw-bold mb-2"><i class="fa-solid fa-wand-magic-sparkles text-accent-primary me-2"></i> Improved Answer:</h6>
+                                    <p class="text-secondary small mb-0 fst-italic" style="white-space: pre-line;">"${result.improved_answer}"</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById(`q-container-${currentQuestionIndex}`).innerHTML += feedbackHtml;
+                } else {
+                    throw new Error(result.error || 'Failed to evaluate answer');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loadingIndicator.classList.add('d-none');
+                userAnswerInput.value = '';
+                
+                // Show next button if applicable
+                if (currentQuestionIndex < currentQuestions.length - 1) {
+                    nextBtn.classList.remove('d-none');
+                }
                 setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
             }
         });
@@ -248,7 +307,6 @@ body { overflow: hidden; }
             if (currentQuestionIndex < currentQuestions.length - 1) {
                 currentQuestionIndex++;
                 displayCurrentQuestion();
-                showAnswerBtn.disabled = false;
             }
         });
     });

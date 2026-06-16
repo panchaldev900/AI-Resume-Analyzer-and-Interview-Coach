@@ -11,7 +11,7 @@ from models import db, Resume, User
 from utils.pdf_parser import extract_text_from_pdf
 from utils.skill_extractor import extract_skills
 from utils.ats_calculator import analyze_resume_with_llm
-from utils.interview_generator import generate_interview_questions
+from utils.interview_generator import generate_interview_questions, evaluate_interview_answer
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_secret_key_for_saas_app'
@@ -273,6 +273,19 @@ def download_report():
         download_name=f"Resume_Report_{latest.id}.pdf",
         mimetype='application/pdf'
     )
+
+@app.route('/api/evaluate_answer', methods=['POST'])
+@login_required
+def evaluate_answer():
+    data = request.json
+    question = data.get('question')
+    user_answer = data.get('user_answer')
+    
+    if not question or not user_answer:
+        return jsonify({'error': 'Missing question or user_answer'}), 400
+        
+    evaluation = evaluate_interview_answer(question, user_answer)
+    return jsonify(evaluation)
 
 if __name__ == '__main__':
     app.run(debug=True)
