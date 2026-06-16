@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}AI Interview Coach | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout bg-black bg-opacity-25" style="height: calc(100vh - 80px); overflow: hidden;">
+    
+    <!-- Left Sidebar: Categories -->
+    <aside class="dashboard-sidebar" style="min-width: 260px; max-width: 260px; background: rgba(15, 23, 42, 0.95);">
+        <div class="mb-4">
+            <h5 class="fw-bold text-white mb-1"><i class="fa-solid fa-robot text-gradient me-2"></i> Interview Coach</h5>
+            <p class="text-secondary small mb-0">Personalized AI Mock Interview</p>
+        </div>
+        
+        <h6 class="text-uppercase text-secondary fw-bold letter-spacing-1 mb-3 mt-2" style="font-size: 11px;">Question Categories</h6>
+        
+        <div class="d-flex flex-column gap-2" id="categoryTabs">
+            <button class="btn btn-outline text-start sidebar-link active w-100 border-0" data-category="Technical">
+                <i class="fa-solid fa-code text-accent-secondary w-20px"></i> Technical
+            </button>
+            <button class="btn btn-outline text-start sidebar-link w-100 border-0" data-category="Behavioral">
+                <i class="fa-solid fa-users text-warning w-20px"></i> Behavioral
+            </button>
+            <button class="btn btn-outline text-start sidebar-link w-100 border-0" data-category="HR">
+                <i class="fa-solid fa-briefcase text-success w-20px"></i> HR / Culture Fit
+            </button>
+            <button class="btn btn-outline text-start sidebar-link w-100 border-0" data-category="Coding">
+                <i class="fa-solid fa-terminal text-danger w-20px"></i> System Design
+            </button>
+        </div>
+
+        <div class="mt-auto pt-4 border-top" style="border-color: rgba(255,255,255,0.05) !important;">
+            <button class="btn btn-primary w-100 mb-2" id="generateBtn">
+                <i class="fa-solid fa-rotate me-2"></i> Generate Questions
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline w-100 text-secondary">
+                <i class="fa-solid fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+    </aside>
+
+    <!-- Right Side: Chat Window -->
+    <main class="flex-grow-1 position-relative d-flex flex-column h-100">
+        
+        <!-- Chat History Area -->
+        <div class="flex-grow-1 overflow-auto p-4 p-md-5" id="chatArea">
+            
+            <!-- Welcome Message -->
+            <div class="chat-container mb-4">
+                <div class="chat-message chat-ai">
+                    <div class="avatar avatar-ai shadow-sm"><i class="fa-solid fa-robot"></i></div>
+                    <div class="chat-bubble">
+                        <h6 class="fw-bold mb-2">Welcome to your AI Interview Session! 👋</h6>
+                        <p class="mb-2 text-secondary">I've analyzed your resume and the job description. I'm ready to ask you personalized questions to help you prepare.</p>
+                        <p class="mb-0 text-secondary">Select a category on the left, then click <strong>Generate Questions</strong> to begin.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic content will be injected here -->
+            <div id="questionsContainer" class="d-flex flex-column gap-5"></div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="d-none">
+                <div class="chat-message chat-ai">
+                    <div class="avatar avatar-ai shadow-sm"><i class="fa-solid fa-robot"></i></div>
+                    <div class="chat-bubble d-flex align-items-center gap-2" style="padding: 12px 20px;">
+                        <div class="spinner-grow spinner-grow-sm text-primary" role="status"></div>
+                        <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="animation-delay: 0.2s"></div>
+                        <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="animation-delay: 0.4s"></div>
+                        <span class="ms-2 text-secondary small fw-medium">Synthesizing questions...</span>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Sticky Bottom Controls (Fake Chat Input area) -->
+        <div class="p-4" style="background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-color); backdrop-filter: var(--glass-blur);">
+            <div class="d-flex gap-3 justify-content-center align-items-center max-w-800 mx-auto">
+                <button class="btn btn-outline-secondary rounded-pill px-4" id="showAnswerBtn" disabled>
+                    <i class="fa-solid fa-eye me-2"></i> Show AI Answer
+                </button>
+                <button class="btn btn-primary rounded-pill px-5 shadow-lg" id="nextBtn" disabled>
+                    Next Question <i class="fa-solid fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<style>
+.w-20px { width: 24px; text-align: center; }
+.max-w-800 { max-width: 800px; }
+/* Override body scroll for this specific page */
+body { overflow: hidden; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const storedData = sessionStorage.getItem('resumeData');
+        let data = null;
+        
+        if (storedData) {
+            data = JSON.parse(storedData);
+        } else {
+            // Fetch from backend
+            try {
+                const response = await fetch('/api/latest_resume');
+                if (response.ok) {
+                    data = await response.json();
+                    sessionStorage.setItem('resumeData', JSON.stringify(data));
+                } else {
+                    window.location.href = '/analyze';
+                    return;
+                }
+            } catch (e) {
+                window.location.href = '/analyze';
+                return;
+            }
+        }
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let selectedCategory = 'Technical';
+
+        // UI Elements
+        const categoryBtns = document.querySelectorAll('#categoryTabs button');
+        const generateBtn = document.getElementById('generateBtn');
+        const questionsContainer = document.getElementById('questionsContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const nextBtn = document.getElementById('nextBtn');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const chatArea = document.getElementById('chatArea');
+
+        // Category Selection
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                categoryBtns.forEach(b => {
+                    b.classList.remove('active');
+                    b.classList.add('text-secondary');
+                });
+                btn.classList.add('active');
+                btn.classList.remove('text-secondary');
+                selectedCategory = btn.dataset.category;
+            });
+        });
+
+        // Generate Questions
+        generateBtn.addEventListener('click', async () => {
+            generateBtn.disabled = true;
+            nextBtn.disabled = true;
+            showAnswerBtn.disabled = true;
+            loadingIndicator.classList.remove('d-none');
+            
+            // Auto scroll to bottom
+            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+
+            try {
+                const response = await fetch('/api/generate_interview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        skills: data.matched_skills.concat(data.missing_skills),
+                        category: selectedCategory
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentQuestions = result.questions;
+                    currentQuestionIndex = 0;
+                    displayCurrentQuestion();
+                } else {
+                    throw new Error(result.error || 'Failed to generate questions');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                generateBtn.disabled = false;
+                loadingIndicator.classList.add('d-none');
+            }
+        });
+
+        function displayCurrentQuestion() {
+            if (currentQuestions.length === 0) return;
+
+            const q = currentQuestions[currentQuestionIndex];
+            
+            const questionHtml = `
+                <div class="chat-container animate-fade-up">
+                    <!-- AI Question -->
+                    <div class="chat-message chat-ai">
+                        <div class="avatar avatar-ai shadow-sm"><i class="fa-solid fa-robot"></i></div>
+                        <div class="chat-bubble flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom" style="border-color: rgba(255,255,255,0.1) !important;">
+                                <span class="badge bg-primary bg-opacity-25 text-primary">Question ${currentQuestionIndex + 1} of ${currentQuestions.length}</span>
+                                <span class="badge bg-dark text-secondary">${selectedCategory}</span>
+                            </div>
+                            <h5 class="fw-bold text-white lh-base">${q.question}</h5>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Answer (Hidden by default) -->
+                    <div class="chat-message chat-ai d-none" id="answer-${currentQuestionIndex}">
+                        <div class="avatar bg-success text-white shadow-sm"><i class="fa-solid fa-lightbulb"></i></div>
+                        <div class="chat-bubble" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+                            <h6 class="text-success fw-bold mb-2">Suggested Answer Guide</h6>
+                            <p class="text-secondary mb-0" style="white-space: pre-line;">${q.suggested_answer}</p>
+                            
+                            <div class="mt-3 pt-3 border-top" style="border-color: rgba(16, 185, 129, 0.1) !important;">
+                                <h6 class="text-white small fw-bold mb-2">Key points to hit:</h6>
+                                <ul class="text-secondary small mb-0 ps-3">
+                                    <li>Focus on the STAR method (Situation, Task, Action, Result)</li>
+                                    <li>Highlight specific technologies from your resume</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            questionsContainer.innerHTML += questionHtml;
+            
+            // Enable controls
+            showAnswerBtn.disabled = false;
+            nextBtn.disabled = currentQuestionIndex >= currentQuestions.length - 1;
+            
+            // Auto scroll
+            setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+        }
+
+        // Show Answer logic
+        showAnswerBtn.addEventListener('click', () => {
+            const answerDiv = document.getElementById(`answer-${currentQuestionIndex}`);
+            if (answerDiv) {
+                answerDiv.classList.remove('d-none');
+                answerDiv.classList.add('animate-fade-up');
+                showAnswerBtn.disabled = true;
+                setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 100);
+            }
+        });
+
+        // Next Question logic
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex < currentQuestions.length - 1) {
+                currentQuestionIndex++;
+                displayCurrentQuestion();
+                showAnswerBtn.disabled = false;
+            }
+        });
+    });
+</script>
+{% endblock %}

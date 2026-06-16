@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+        <div class="d-flex align-items-center mb-4 d-none d-lg-flex px-2">
+            <h6 class="text-uppercase text-secondary fw-bold letter-spacing-1 mb-0" style="font-size: 12px;">Menu</h6>
+        </div>
+        <a href="#" class="sidebar-link active" onclick="switchTab('overview', this)">
+            <i class="fa-solid fa-chart-pie w-20px text-center"></i> Dashboard
+        </a>
+        <a href="#" class="sidebar-link" onclick="switchTab('history', this)">
+            <i class="fa-solid fa-clock-rotate-left w-20px text-center"></i> Analysis History
+        </a>
+        <a href="{{ url_for('interview') }}" class="sidebar-link">
+            <i class="fa-solid fa-user-tie w-20px text-center"></i> Interview Coach
+        </a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main position-relative">
+        <!-- Overview Tab -->
+        <div id="overviewTab">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Analysis Results</h2>
+                    <p class="text-secondary mb-0">Here is how your resume stacks up against the job description.</p>
+                </div>
+                <a href="{{ url_for('download_report') }}" class="btn btn-primary d-none d-md-flex align-items-center gap-2 shadow-sm hover-lift">
+                    <i class="fa-solid fa-download"></i> Download Report
+                </a>
+            </div>
+
+            <!-- Loading Spinner (Shown before data is fetched) -->
+            <div id="dashboardLoading" class="text-center py-5 d-none">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-secondary mt-3">Loading your latest analysis...</p>
+            </div>
+
+            <div id="dashboardContent" class="d-none">
+                <!-- Top Metrics Row -->
+                <div class="row g-4 mb-4">
+                    <!-- ATS Score -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="glass-card h-100 text-center d-flex flex-column align-items-center justify-content-center py-5">
+                            <h5 class="fw-bold text-secondary mb-4">ATS Match Score</h5>
+                            <div class="circular-progress" id="atsProgress" style="--value: 0; --progress-color: var(--accent-primary);">
+                                <div class="progress-value"><span id="atsScore">0</span>%</div>
+                            </div>
+                            <p class="mt-4 mb-0 fw-medium" id="atsStatus">Calculating...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Skill Match % -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="glass-card h-100 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="fw-bold text-secondary mb-0">Skill Match</h5>
+                                <i class="fa-solid fa-bullseye fs-4 text-gradient"></i>
+                            </div>
+                            <div class="fs-1 fw-bold mb-2" id="skillMatchPercent">0%</div>
+                            <p class="text-secondary small mb-4">Percentage of required skills found on your resume.</p>
+                            <div class="progress" style="height: 8px; background: rgba(255,255,255,0.05);">
+                                <div class="progress-bar bg-info" id="skillProgressBar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resume Rating -->
+                    <div class="col-lg-4 col-md-12">
+                        <div class="glass-card h-100 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="fw-bold text-secondary mb-0">Resume Rating</h5>
+                                <i class="fa-solid fa-star fs-4 text-warning"></i>
+                            </div>
+                            <div class="fs-1 fw-bold mb-2" id="overallRating">- / 10</div>
+                            <p class="text-secondary small mb-4">Overall AI evaluation of your resume quality.</p>
+                            <div class="d-flex gap-1" id="ratingStars">
+                                <!-- Stars injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Section -->
+                <div class="glass-card mb-4">
+                    <h4 class="card-heading border-bottom pb-3 mb-4" style="border-color: var(--border-color) !important;">Skill Extraction</h4>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-check-circle me-2"></i> Matched Skills</h6>
+                            <div id="matchedSkills" class="d-flex flex-wrap">
+                                <!-- Chips injected via JS -->
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-danger mb-3"><i class="fa-solid fa-circle-xmark me-2"></i> Missing Skills</h6>
+                            <div id="missingSkills" class="d-flex flex-wrap">
+                                <!-- Chips injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feedback Sections -->
+                <div class="row g-4">
+                    <!-- Strengths -->
+                    <div class="col-md-6">
+                        <div class="glass-card h-100">
+                            <h4 class="card-heading text-success mb-4"><i class="fa-solid fa-arrow-trend-up me-2"></i> Strengths</h4>
+                            <ul class="list-unstyled d-flex flex-column gap-3 mb-0" id="strengthsList">
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Weaknesses -->
+                    <div class="col-md-6">
+                        <div class="glass-card h-100">
+                            <h4 class="card-heading text-danger mb-4"><i class="fa-solid fa-arrow-trend-down me-2"></i> Weaknesses</h4>
+                            <ul class="list-unstyled d-flex flex-column gap-3 mb-0" id="weaknessesList">
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Suggestions -->
+                    <div class="col-12">
+                        <div class="glass-card" style="border-top: 4px solid var(--accent-primary);">
+                            <h4 class="card-heading mb-4"><i class="fa-solid fa-lightbulb text-warning me-2"></i> Actionable Suggestions</h4>
+                            <ul class="list-unstyled d-flex flex-column gap-3 mb-0" id="suggestionsList">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-5 mb-3">
+                    <a href="{{ url_for('interview') }}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-lg hover-lift">
+                        <i class="fa-solid fa-user-tie me-2"></i> Launch Interview Coach
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="historyTab" class="d-none">
+            <div class="mb-4">
+                <h2 class="fw-bold mb-1">Analysis History</h2>
+                <p class="text-secondary mb-0">Review your previously analyzed resumes.</p>
+            </div>
+            
+            <div class="glass-card p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <th class="py-3 px-4 text-secondary fw-semibold bg-transparent">Resume</th>
+                                <th class="py-3 px-4 text-secondary fw-semibold bg-transparent text-center">ATS Score</th>
+                                <th class="py-3 px-4 text-secondary fw-semibold bg-transparent text-end">Date Analyzed</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" style="border-top: none;">
+                            <!-- History loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<style>
+.w-20px { width: 24px; }
+.letter-spacing-1 { letter-spacing: 0.05em; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab switching logic
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
+        el.classList.add('active');
+        
+        if (tabId === 'overview') {
+            document.getElementById('overviewTab').classList.remove('d-none');
+            document.getElementById('historyTab').classList.add('d-none');
+        } else {
+            document.getElementById('overviewTab').classList.add('d-none');
+            document.getElementById('historyTab').classList.remove('d-none');
+            loadHistory();
+        }
+    }
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/history');
+            const data = await response.json();
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-secondary">No history found. Upload a resume to get started.</td></tr>';
+                return;
+            }
+            
+            data.forEach(item => {
+                let badgeClass = 'bg-danger text-danger';
+                if (item.ats_score >= 80) badgeClass = 'bg-success text-success';
+                else if (item.ats_score >= 60) badgeClass = 'bg-warning text-warning';
+                
+                tbody.innerHTML += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td class="py-3 px-4 bg-transparent align-middle">
+                            <i class="fa-regular fa-file-pdf text-danger me-2"></i> 
+                            <span class="text-white fw-medium">${item.resume_name}</span>
+                        </td>
+                        <td class="py-3 px-4 bg-transparent align-middle text-center">
+                            <span class="badge ${badgeClass} bg-opacity-10 px-3 py-2 rounded-pill fs-6">${item.ats_score}%</span>
+                        </td>
+                        <td class="py-3 px-4 bg-transparent align-middle text-end text-secondary">
+                            ${item.upload_date}
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (error) {
+            console.error('Error loading history:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        let data = null;
+        const storedData = sessionStorage.getItem('resumeData');
+        
+        if (storedData) {
+            data = JSON.parse(storedData);
+            renderDashboard(data);
+        } else {
+            // No session storage? Fetch the latest from backend!
+            document.getElementById('dashboardLoading').classList.remove('d-none');
+            
+            try {
+                const response = await fetch('/api/latest_resume');
+                if (response.ok) {
+                    data = await response.json();
+                    sessionStorage.setItem('resumeData', JSON.stringify(data));
+                    renderDashboard(data);
+                } else {
+                    // No history found at all, redirect to upload
+                    window.location.href = '/analyze';
+                    return;
+                }
+            } catch (err) {
+                console.error(err);
+                window.location.href = '/analyze';
+                return;
+            }
+        }
+    });
+    
+    function renderDashboard(data) {
+        document.getElementById('dashboardLoading').classList.add('d-none');
+        document.getElementById('dashboardContent').classList.remove('d-none');
+        
+        // Render ATS Score
+        const atsProgress = document.getElementById('atsProgress');
+        const atsScoreSpan = document.getElementById('atsScore');
+        const atsStatus = document.getElementById('atsStatus');
+        
+        let currentScore = 0;
+        const targetScore = data.ats_score;
+        
+        if (targetScore >= 80) atsProgress.style.setProperty('--progress-color', 'var(--success)');
+        else if (targetScore >= 60) atsProgress.style.setProperty('--progress-color', 'var(--warning)');
+        else atsProgress.style.setProperty('--progress-color', 'var(--danger)');
+
+        const interval = setInterval(() => {
+            if (currentScore >= targetScore) {
+                clearInterval(interval);
+                if (targetScore >= 80) {
+                    atsStatus.innerHTML = '<i class="fa-solid fa-check text-success"></i> Excellent Match';
+                    atsStatus.className = 'mt-4 mb-0 fw-bold text-success';
+                } else if (targetScore >= 60) {
+                    atsStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-warning"></i> Moderate Match';
+                    atsStatus.className = 'mt-4 mb-0 fw-bold text-warning';
+                } else {
+                    atsStatus.innerHTML = '<i class="fa-solid fa-xmark text-danger"></i> Poor Match';
+                    atsStatus.className = 'mt-4 mb-0 fw-bold text-danger';
+                }
+            } else {
+                currentScore++;
+                atsProgress.style.setProperty('--value', currentScore);
+                atsScoreSpan.textContent = currentScore;
+            }
+        }, 20);
+
+        // Render Skill Match %
+        const matchedCount = data.matched_skills.length;
+        const missingCount = data.missing_skills.length;
+        const totalRequired = matchedCount + missingCount;
+        let matchPercent = 0;
+        
+        if (totalRequired > 0) {
+            matchPercent = Math.round((matchedCount / totalRequired) * 100);
+        } else if (matchedCount > 0) {
+            matchPercent = 100;
+        }
+
+        document.getElementById('skillMatchPercent').textContent = matchPercent + '%';
+        setTimeout(() => {
+            document.getElementById('skillProgressBar').style.width = matchPercent + '%';
+        }, 500);
+
+        // Render Rating Stars
+        const rating = Math.round(targetScore / 10) || 7;
+        document.getElementById('overallRating').textContent = rating + ' / 10';
+        
+        const starsContainer = document.getElementById('ratingStars');
+        starsContainer.innerHTML = '';
+        for (let i = 1; i <= 10; i++) {
+            if (i <= rating) starsContainer.innerHTML += '<i class="fa-solid fa-star text-warning"></i>';
+            else starsContainer.innerHTML += '<i class="fa-regular fa-star text-secondary" style="opacity: 0.3;"></i>';
+        }
+
+        // Render Skills
+        const matchedContainer = document.getElementById('matchedSkills');
+        matchedContainer.innerHTML = '';
+        if (data.matched_skills.length > 0) {
+            data.matched_skills.forEach(skill => {
+                matchedContainer.innerHTML += `<span class="skill-chip matched"><i class="fa-solid fa-check"></i> ${skill}</span>`;
+            });
+        } else {
+            matchedContainer.innerHTML = '<span class="text-secondary small fst-italic">No required skills found on the resume.</span>';
+        }
+
+        const missingContainer = document.getElementById('missingSkills');
+        missingContainer.innerHTML = '';
+        if (data.missing_skills.length > 0) {
+            data.missing_skills.forEach(skill => {
+                missingContainer.innerHTML += `<span class="skill-chip missing"><i class="fa-solid fa-plus"></i> ${skill}</span>`;
+            });
+        } else {
+            missingContainer.innerHTML = '<span class="text-success small fw-medium"><i class="fa-solid fa-party-horn"></i> You have all the required skills!</span>';
+        }
+
+        // Render Feedback
+        const renderList = (containerId, items, icon) => {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    container.innerHTML += `<li class="d-flex gap-3 text-secondary"><i class="${icon} mt-1"></i><span>${item}</span></li>`;
+                });
+            } else {
+                container.innerHTML = '<li class="text-secondary fst-italic">No data available.</li>';
+            }
+        };
+
+        if (data.feedback) {
+            renderList('strengthsList', data.feedback.strengths, 'fa-solid fa-check text-success');
+            renderList('weaknessesList', data.feedback.weaknesses, 'fa-solid fa-xmark text-danger');
+            renderList('suggestionsList', data.feedback.suggestions, 'fa-solid fa-arrow-right text-accent-primary');
+        }
+    }
+</script>
+{% endblock %}

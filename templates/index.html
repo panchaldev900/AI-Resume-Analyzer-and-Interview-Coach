@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}AI Resume Analyzer | Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section position-relative overflow-hidden">
+    <div class="container-fluid px-lg-5">
+        <div class="row align-items-center g-5">
+            <!-- Left Side: Copy -->
+            <div class="col-lg-6 position-relative z-1">
+                <h1 class="hero-title mb-4 animate-fade-up">
+                    Optimize Your Resume with <span class="text-gradient">AI</span> and Land More Interviews
+                </h1>
+                <p class="subheading mb-5 animate-fade-up animate-delay-1 pe-lg-5">
+                    Analyze resumes, calculate ATS scores, identify missing skills, and generate personalized interview questions using advanced AI.
+                </p>
+                <div class="d-flex flex-wrap gap-3 mb-5 animate-fade-up animate-delay-2">
+                    <a href="{{ url_for('analyze') }}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-lg">Upload Resume</a>
+                    <a href="#how-it-works" class="btn btn-outline btn-lg rounded-pill px-5">Watch Demo</a>
+                </div>
+                
+                <!-- Trust Badges -->
+                <div class="hero-badges animate-fade-up animate-delay-3 flex-wrap">
+                    <div class="badge-glass">
+                        <i class="fa-solid fa-check-circle text-success"></i> ATS Compatible
+                    </div>
+                    <div class="badge-glass">
+                        <i class="fa-solid fa-bolt text-warning"></i> AI Powered
+                    </div>
+                    <div class="badge-glass">
+                        <i class="fa-solid fa-shield-halved text-info"></i> Secure Upload
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Dashboard Preview Graphic -->
+            <div class="col-lg-6 position-relative z-1 d-none d-lg-block animate-fade-up animate-delay-2">
+                <div class="glass-panel rounded-4 p-4 shadow-lg position-relative" style="transform: perspective(1000px) rotateY(-5deg); border: 1px solid rgba(255,255,255,0.15);">
+                    <!-- Fake UI Header -->
+                    <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-secondary" style="border-color: rgba(255,255,255,0.1) !important;">
+                        <div class="d-flex gap-2">
+                            <div class="rounded-circle" style="width:12px; height:12px; background:#ef4444;"></div>
+                            <div class="rounded-circle" style="width:12px; height:12px; background:#f59e0b;"></div>
+                            <div class="rounded-circle" style="width:12px; height:12px; background:#10b981;"></div>
+                        </div>
+                        <div class="mx-auto text-muted small fw-medium">Analysis Complete</div>
+                    </div>
+                    
+                    <!-- Fake UI Content -->
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="glass-panel p-3 rounded-3 text-center h-100">
+                                <div class="text-secondary small mb-2">ATS Score</div>
+                                <div class="fs-1 fw-bold text-gradient">92%</div>
+                                <div class="text-success small mt-1"><i class="fa-solid fa-arrow-up"></i> Excellent Match</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="glass-panel p-3 rounded-3 h-100 d-flex flex-column justify-content-center">
+                                <div class="text-secondary small mb-2">Top Skills Detected</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge" style="background: rgba(79, 70, 229, 0.2); color: #818cf8;">Python</span>
+                                    <span class="badge" style="background: rgba(79, 70, 229, 0.2); color: #818cf8;">Machine Learning</span>
+                                    <span class="badge" style="background: rgba(79, 70, 229, 0.2); color: #818cf8;">TensorFlow</span>
+                                    <span class="badge" style="background: rgba(79, 70, 229, 0.2); color: #818cf8;">SQL</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Floating Element Overlay -->
+                    <div class="glass-card position-absolute shadow-lg" style="bottom: -20px; left: -40px; width: 250px; animation: float 6s ease-in-out infinite;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar avatar-ai">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold small">Interview Coach</div>
+                                <div class="text-secondary" style="font-size: 12px;">Generating questions...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-5 my-5">
+    <div class="container">
+        <div class="text-center mb-5 animate-fade-up">
+            <h2 class="section-title mb-3">Enterprise-Grade Features</h2>
+            <p class="text-secondary fs-5 mx-auto" style="max-width: 600px;">Everything you need to optimize your resume and prepare for technical interviews.</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4 animate-fade-up">
+                <div class="glass-card text-center h-100 hover-lift">
+                    <div class="text-gradient fs-1 mb-4"><i class="fa-solid fa-file-arrow-up"></i></div>
+                    <h3 class="card-heading mb-3">Resume Upload</h3>
+                    <p class="text-secondary">Securely upload your PDF resume for instant processing using state-of-the-art text extraction.</p>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fade-up animate-delay-1">
+                <div class="glass-card text-center h-100 hover-lift">
+                    <div class="text-gradient fs-1 mb-4"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                    <h3 class="card-heading mb-3">ATS Score Analysis</h3>
+                    <p class="text-secondary">Get an accurate match percentage comparing your resume directly against the job description.</p>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fade-up animate-delay-2">
+                <div class="glass-card text-center h-100 hover-lift">
+                    <div class="text-gradient fs-1 mb-4"><i class="fa-solid fa-microchip"></i></div>
+                    <h3 class="card-heading mb-3">Skill Extraction</h3>
+                    <p class="text-secondary">Leverage Generative AI to accurately identify technical, soft, and domain-specific skills.</p>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fade-up">
+                <div class="glass-card text-center h-100 hover-lift">
+                    <div class="text-gradient fs-1 mb-4"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <h3 class="card-heading mb-3">Missing Skills Detection</h3>
+                    <p class="text-secondary">Instantly identify critical keywords you are missing from the job description to beat the ATS.</p>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fade-up animate-delay-1">
+                <div class="glass-card text-center h-100 hover-lift">
+                    <div class="text-gradient fs-1 mb-4"><i class="fa-solid fa-comment-dots"></i></div>
+                    <h3 class="card-heading mb-3">AI Resume Feedback</h3>
+                    <p class="text-secondary">Receive actionable insights and suggestions on how to improve your resume structure and content.</p>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fade-up animate-delay-2">
+                <div class="glass-card text-center h-100 hover-lift">
+                    <div class="text-gradient fs-1 mb-4"><i class="fa-solid fa-user-tie"></i></div>
+                    <h3 class="card-heading mb-3">AI Interview Coach</h3>
+                    <p class="text-secondary">Practice with dynamic, personalized technical and HR questions generated specifically for you.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section id="how-it-works" class="py-5 mb-5 bg-black bg-opacity-25 border-top border-bottom border-light">
+    <div class="container py-5">
+        <div class="text-center mb-5 animate-fade-up">
+            <h2 class="section-title mb-3">How It Works</h2>
+            <p class="text-secondary fs-5">A seamless, fully automated workflow to land your dream job.</p>
+        </div>
+        
+        <div class="row text-center position-relative g-4 animate-fade-up animate-delay-1">
+            <!-- Connecting line for desktop -->
+            <div class="d-none d-lg-block position-absolute top-50 start-0 w-100" style="height: 2px; background: linear-gradient(90deg, transparent, rgba(79,70,229,0.3), transparent); transform: translateY(-50%); z-index: 0;"></div>
+            
+            <div class="col-lg">
+                <div class="glass-panel rounded-circle d-inline-flex align-items-center justify-content-center mb-3 position-relative z-1" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-upload fs-3 text-white"></i>
+                </div>
+                <h5 class="fw-bold">Step 1</h5>
+                <p class="text-secondary small">Upload Resume</p>
+            </div>
+            <div class="col-lg">
+                <div class="glass-panel rounded-circle d-inline-flex align-items-center justify-content-center mb-3 position-relative z-1" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-paste fs-3 text-white"></i>
+                </div>
+                <h5 class="fw-bold">Step 2</h5>
+                <p class="text-secondary small">Paste Job Description</p>
+            </div>
+            <div class="col-lg">
+                <div class="glass-panel rounded-circle d-inline-flex align-items-center justify-content-center mb-3 position-relative z-1" style="width: 80px; height: 80px; box-shadow: 0 0 30px rgba(79,70,229,0.4); border-color: var(--accent-primary);">
+                    <i class="fa-solid fa-brain fs-3 text-gradient"></i>
+                </div>
+                <h5 class="fw-bold">Step 3</h5>
+                <p class="text-secondary small">AI Analysis</p>
+            </div>
+            <div class="col-lg">
+                <div class="glass-panel rounded-circle d-inline-flex align-items-center justify-content-center mb-3 position-relative z-1" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-chart-pie fs-3 text-white"></i>
+                </div>
+                <h5 class="fw-bold">Step 4</h5>
+                <p class="text-secondary small">Get ATS Score</p>
+            </div>
+            <div class="col-lg">
+                <div class="glass-panel rounded-circle d-inline-flex align-items-center justify-content-center mb-3 position-relative z-1" style="width: 80px; height: 80px;">
+                    <i class="fa-solid fa-comments fs-3 text-white"></i>
+                </div>
+                <h5 class="fw-bold">Step 5</h5>
+                <p class="text-secondary small">Practice Interview</p>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5 pt-4 animate-fade-up animate-delay-2">
+            <a href="{{ url_for('analyze') }}" class="btn btn-primary btn-lg rounded-pill px-5">Get Started Now</a>
+        </div>
+    </div>
+</section>
+
+<style>
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+</style>
+{% endblock %}

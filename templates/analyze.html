@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Resume | AI Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 animate-fade-up">
+            
+            <div class="text-center mb-5">
+                <h1 class="section-title mb-3">Optimize Your Application</h1>
+                <p class="text-secondary fs-5">Upload your resume and the job description to get a detailed ATS analysis.</p>
+            </div>
+
+            <div class="glass-card p-4 p-md-5">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    
+                    <!-- Upload Zone -->
+                    <div class="mb-5">
+                        <label class="form-label fw-bold mb-3">1. Upload Resume (PDF Only)</label>
+                        <div class="upload-zone position-relative" id="dropZone" onclick="document.getElementById('resumeInput').click()">
+                            <input type="file" id="resumeInput" accept=".pdf" class="d-none" required>
+                            
+                            <div class="upload-content" id="uploadContent">
+                                <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                                <h4 class="mb-2 fw-bold text-white">Drag & Drop your resume here</h4>
+                                <p class="text-secondary mb-0">or click to browse from your computer</p>
+                                <p class="small text-muted mt-2 mb-0">Maximum file size: 5MB</p>
+                            </div>
+                            
+                            <div class="upload-success d-none" id="uploadSuccess">
+                                <i class="fa-solid fa-file-pdf fs-1 text-danger mb-3"></i>
+                                <h5 class="text-white mb-0" id="fileName">resume.pdf</h5>
+                                <button type="button" class="btn btn-sm btn-outline-danger mt-3" onclick="resetUpload(event)">Remove File</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Description -->
+                    <div class="mb-5">
+                        <label class="form-label fw-bold mb-3 d-flex justify-content-between align-items-center">
+                            <span>2. Paste Job Description</span>
+                            <span class="badge" style="background: rgba(6, 182, 212, 0.1); color: var(--accent-secondary);">Optional but recommended</span>
+                        </label>
+                        <textarea class="form-control" id="jobDescription" rows="6" placeholder="Paste the full job description here to calculate your precise ATS match score..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100 py-3 rounded-pill shadow-lg" id="analyzeBtn">
+                        <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Analyze My Resume
+                    </button>
+                </form>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="d-none text-center py-5">
+                    <div class="position-relative d-inline-block mb-4">
+                        <div class="glass-panel rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <i class="fa-solid fa-brain fs-1 text-gradient" style="animation: pulse 1.5s infinite;"></i>
+                        </div>
+                        <div class="position-absolute top-50 start-50 translate-middle" style="width: 120px; height: 120px; border: 2px solid transparent; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    </div>
+                    <h4 class="fw-bold text-white mb-2">AI is scanning your resume...</h4>
+                    <p class="text-secondary" id="loadingText">Extracting text and structure</p>
+                    
+                    <div class="progress mt-4 mx-auto" style="height: 6px; max-width: 300px; background: rgba(255,255,255,0.1);">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated w-100" role="progressbar"></div>
+                    </div>
+                </div>
+                
+                <!-- Error Alert -->
+                <div id="errorAlert" class="alert alert-danger mt-4 d-none" style="background: var(--danger-bg); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> <span id="errorText">An error occurred.</span>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const resumeInput = document.getElementById('resumeInput');
+    const uploadContent = document.getElementById('uploadContent');
+    const uploadSuccess = document.getElementById('uploadSuccess');
+    const fileName = document.getElementById('fileName');
+    const form = document.getElementById('uploadForm');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loadingState = document.getElementById('loadingState');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorText = document.getElementById('errorText');
+
+    // Drag and Drop Handlers
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropZone.style.borderColor = 'var(--accent-primary)';
+        dropZone.style.background = 'rgba(79, 70, 229, 0.1)';
+    }
+
+    function unhighlight(e) {
+        dropZone.style.borderColor = 'var(--border-color)';
+        dropZone.style.background = 'rgba(255, 255, 255, 0.02)';
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    resumeInput.addEventListener('change', function() {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type !== 'application/pdf') {
+                showError('Please upload a PDF file only.');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File size exceeds 5MB limit.');
+                return;
+            }
+            
+            // Set file to input if dropped
+            if (resumeInput.files !== files) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                resumeInput.files = dataTransfer.files;
+            }
+            
+            fileName.textContent = file.name;
+            uploadContent.classList.add('d-none');
+            uploadSuccess.classList.remove('d-none');
+            errorAlert.classList.add('d-none');
+        }
+    }
+
+    function resetUpload(e) {
+        e.stopPropagation();
+        resumeInput.value = '';
+        uploadContent.classList.remove('d-none');
+        uploadSuccess.classList.add('d-none');
+    }
+
+    function showError(msg) {
+        errorText.textContent = msg;
+        errorAlert.classList.remove('d-none');
+        resetUpload(new Event('click'));
+    }
+
+    // Form Submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!resumeInput.files || resumeInput.files.length === 0) {
+            showError('Please upload a resume first.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('resume', resumeInput.files[0]);
+        formData.append('job_description', document.getElementById('jobDescription').value);
+
+        // Show loading state
+        form.classList.add('d-none');
+        loadingState.classList.remove('d-none');
+        errorAlert.classList.add('d-none');
+        
+        const loadingTexts = [
+            "Extracting text and structure...",
+            "Analyzing job description...",
+            "Calculating ATS match score...",
+            "Identifying technical skills...",
+            "Generating AI feedback..."
+        ];
+        let textIdx = 0;
+        const textInterval = setInterval(() => {
+            textIdx = (textIdx + 1) % loadingTexts.length;
+            document.getElementById('loadingText').textContent = loadingTexts[textIdx];
+        }, 2000);
+
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store in session storage
+                sessionStorage.setItem('resumeData', JSON.stringify(data));
+                // Redirect
+                window.location.href = '/dashboard';
+            } else {
+                throw new Error(data.error || 'Failed to analyze resume');
+            }
+        } catch (error) {
+            clearInterval(textInterval);
+            loadingState.classList.add('d-none');
+            form.classList.remove('d-none');
+            showError(error.message);
+        }
+    });
+</script>
+{% endblock %}
