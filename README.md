@@ -2,8 +2,6 @@
 
 A premium, modern SaaS web application that empowers job seekers to bypass Applicant Tracking Systems (ATS) and ace their technical interviews. Powered by **Google Gemini AI**, this platform analyzes your resume, compares it against job descriptions, and provides an interactive mock interview simulator.
 
-![AI Resume Analyzer Banner](https://via.placeholder.com/1200x400.png?text=AI+Resume+Analyzer+%26+Interview+Coach) *(Replace with actual screenshot)*
-
 ## 🚀 Features
 
 *   **Intelligent ATS Scoring:** Upload your PDF resume and a Job Description. The AI calculates a match percentage and extracts matched vs. missing skills.
@@ -89,9 +87,71 @@ Open your browser and navigate to `http://127.0.0.1:5000` to view the app!
 │   └── interview.html          # Interactive Mock Interview UI
 └── uploads/                    # Temporary storage for uploaded resumes
 ```
+---
 
-## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/your-username/ai-resume-analyzer/issues).
+# 🔍 How It Works
+
+1. Upload Resume (PDF)
+
+2. (Optional) Paste a Job Description
+
+3. AI extracts:
+
+   - Skills
+   - Experience
+   - Projects
+   - Education
+
+4. AI analyzes:
+
+   - ATS Score
+   - Resume Quality
+   - Skill Match
+   - Missing Skills
+
+5. Gemini AI generates:
+
+   - Resume Strengths
+   - Weaknesses
+   - Improvement Suggestions
+   - Career Guidance
+
+6. AI Interview Coach creates personalized interview questions.
+
+---
+
+# 🌟 Future Improvements
+
+- Resume Rewrite Assistant
+- AI Mock Interview Chatbot
+- Cover Letter Generator
+- Resume Ranking System
+- Multi-language Resume Support
+- User Authentication
+- Cloud Deployment
+- Resume Version History
+
+---
+
+# 👨‍💻 Author
+
+**Dev Panchal**
+
+📧 AI & Machine Learning Enthusiast
+
+GitHub:
+https://github.com/panchaldev900
+
+LinkedIn:
+https://linkedin.com/in/dev-panchal900
+
+---
+
+# ⭐ Support
+
+If you found this project useful, please consider giving it a ⭐ on GitHub.
+
+It helps others discover the project and motivates further development.
 
 ## 📝 License
 This project is [MIT](https://choosealicense.com/licenses/mit/) licensed.
